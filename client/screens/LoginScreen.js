@@ -1,12 +1,26 @@
-import React from 'react';
-import { Text, StyleSheet, View, StatusBar, TouchableOpacity, Image, TextInput } from 'react-native';
+import React, { useState } from 'react';
+import { Text, StyleSheet, View, StatusBar, TouchableOpacity, Image, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeftIcon } from 'react-native-heroicons/solid';
 import { useNavigation } from '@react-navigation/native';
+import { FIREBASE_AUTH } from '../firebaseconfig';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 export default function LoginScreen() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const navigation = useNavigation();
+
+  const handleLogin = async () => {
+    try {
+      await signInWithEmailAndPassword(FIREBASE_AUTH, email, password);
+      Alert.alert('Success', 'Logged in successfully!');
+      navigation.navigate('Home'); // Adjust to your route
+    } catch (error) {
+      Alert.alert('Login Error', error.message);
+    }
+  };
 
   const handleGoogleLogin = () => {
     console.log('Google login pressed');
@@ -27,33 +41,16 @@ export default function LoginScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      
-      <LinearGradient
-        colors={['#7F00FF', '#E100FF']}
-        style={StyleSheet.absoluteFill}
-      />
-
+      <LinearGradient colors={['#7F00FF', '#E100FF']} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={styles.safeArea}>
-        {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton} 
-            onPress={() => navigation.navigate('Welcome')}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Welcome')}>
             <ArrowLeftIcon size={30} color="black" />
           </TouchableOpacity>
         </View>
-
-        {/* Image */}
         <View style={styles.imageContainer}>
-          <Image 
-            source={require('../assets/images/welcome.png')}
-            style={styles.loginImage}
-            resizeMode="contain"
-          />
+          <Image source={require('../assets/images/welcome.png')} style={styles.loginImage} resizeMode="contain" />
         </View>
-
-        {/* White rounded form container */}
         <View style={styles.contentContainer}>
           <View style={styles.form}>
             <Text style={styles.label}>Email Address</Text>
@@ -62,28 +59,28 @@ export default function LoginScreen() {
               placeholder="john@gmail.com"
               keyboardType="email-address"
               autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
             />
             <Text style={styles.label}>Password</Text>
             <TextInput
               style={styles.input}
               placeholder="********"
               secureTextEntry
+              value={password}
+              onChangeText={setPassword}
             />
             <TouchableOpacity style={styles.forgotButton}>
               <Text style={styles.forgotText}>Forgot Password?</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.loginButton}>
+            <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
               <Text style={styles.loginButtonText}>Login</Text>
             </TouchableOpacity>
-
-            {/* OR Separator */}
             <View style={styles.orContainer}>
               <View style={styles.orLine} />
               <Text style={styles.orText}>Or</Text>
               <View style={styles.orLine} />
             </View>
-
-            {/* Social login icons */}
             <View style={styles.socialContainer}>
               <TouchableOpacity onPress={handleGoogleLogin}>
                 <Image source={require('../assets/images/google.png')} style={styles.socialIcon} />
@@ -95,15 +92,12 @@ export default function LoginScreen() {
                 <Image source={require('../assets/images/communication.png')} style={styles.socialIcon} />
               </TouchableOpacity>
             </View>
-
-            {/* ✅ Signup prompt inside white container */}
             <View style={styles.signupContainer}>
               <Text style={styles.signupText}>Don't have an account? </Text>
               <TouchableOpacity onPress={handleSignup}>
                 <Text style={styles.signupLink}>Sign up</Text>
               </TouchableOpacity>
             </View>
-
           </View>
         </View>
       </SafeAreaView>
