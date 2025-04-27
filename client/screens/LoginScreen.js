@@ -1,12 +1,16 @@
-import React from 'react';
-import { Text, StyleSheet, View, StatusBar, TouchableOpacity, Image, TextInput } from 'react-native';
+import React, { useState } from 'react';
+import { Text, StyleSheet, View, StatusBar, TouchableOpacity, Image, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeftIcon } from 'react-native-heroicons/solid';
 import { useNavigation } from '@react-navigation/native';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { FIREBASE_AUTH } from '../firebaseconfig'; // Adjust path if needed
 
 export default function LoginScreen() {
   const navigation = useNavigation();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleGoogleLogin = () => {
     console.log('Google login pressed');
@@ -24,29 +28,60 @@ export default function LoginScreen() {
     navigation.navigate('Signup');
   };
 
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    try {
+      // Sign in user with Firebase Authentication
+      const userCredential = await signInWithEmailAndPassword(FIREBASE_AUTH, email, password);
+      const user = userCredential.user;
+
+      // Wait for authentication state to update
+      return new Promise((resolve, reject) => {
+        const unsubscribe = FIREBASE_AUTH.onAuthStateChanged((authenticatedUser) => {
+          if (authenticatedUser) {
+            unsubscribe(); // Stop listening once authenticated
+            console.log('User logged in successfully:', user.uid);
+            resolve();
+          }
+        });
+      }).then(() => {
+        navigation.navigate('Home');
+      });
+    } catch (error) {
+      console.error('Login error:', error);
+      if (error.code === 'auth/user-not-found') {
+        Alert.alert('User Not Found', 'No account exists with this email. Please sign up.');
+      } else if (error.code === 'auth/wrong-password') {
+        Alert.alert('Incorrect Password', 'The password you entered is incorrect.');
+      } else if (error.code === 'auth/invalid-email') {
+        Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      } else {
+        Alert.alert('Login Failed', error.message);
+      }
+    }
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      
-      <LinearGradient
-        colors={['#7F00FF', '#E100FF']}
-        style={StyleSheet.absoluteFill}
-      />
+
+      <LinearGradient colors={['#7F00FF', '#E100FF']} style={StyleSheet.absoluteFill} />
 
       <SafeAreaView style={styles.safeArea}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton} 
-            onPress={() => navigation.navigate('Welcome')}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Welcome')}>
             <ArrowLeftIcon size={30} color="black" />
           </TouchableOpacity>
         </View>
 
         {/* Image */}
         <View style={styles.imageContainer}>
-          <Image 
+          <Image
             source={require('../assets/images/welcome.png')}
             style={styles.loginImage}
             resizeMode="contain"
@@ -62,17 +97,23 @@ export default function LoginScreen() {
               placeholder="john@gmail.com"
               keyboardType="email-address"
               autoCapitalize="none"
+              placeholderTextColor="#999"
+              value={email}
+              onChangeText={setEmail}
             />
             <Text style={styles.label}>Password</Text>
             <TextInput
               style={styles.input}
               placeholder="********"
               secureTextEntry
+              placeholderTextColor="#999"
+              value={password}
+              onChangeText={setPassword}
             />
             <TouchableOpacity style={styles.forgotButton}>
               <Text style={styles.forgotText}>Forgot Password?</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.loginButton}>
+            <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
               <Text style={styles.loginButtonText}>Login</Text>
             </TouchableOpacity>
 
@@ -96,14 +137,13 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* ✅ Signup prompt inside white container */}
+            {/* Signup prompt inside white container */}
             <View style={styles.signupContainer}>
               <Text style={styles.signupText}>Don't have an account? </Text>
               <TouchableOpacity onPress={handleSignup}>
                 <Text style={styles.signupLink}>Sign up</Text>
               </TouchableOpacity>
             </View>
-
           </View>
         </View>
       </SafeAreaView>

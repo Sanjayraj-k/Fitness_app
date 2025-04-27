@@ -1,12 +1,18 @@
-import React from 'react';
-import { Text, StyleSheet, View, StatusBar, TouchableOpacity, Image, TextInput } from 'react-native';
+import React, { useState } from 'react';
+import { Text, StyleSheet, View, StatusBar, TouchableOpacity, Image, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeftIcon } from 'react-native-heroicons/solid';
 import { useNavigation } from '@react-navigation/native';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { FIREBASE_AUTH, FIRESTORE_DB } from '../firebaseconfig'; // Adjust path if needed
 
 export default function SignupScreen() {
   const navigation = useNavigation();
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleGoogleLogin = () => {
     console.log('Google login pressed');
@@ -24,18 +30,69 @@ export default function SignupScreen() {
     navigation.navigate('Login');
   };
 
-  const handleSignup = () => {
-    console.log('Sign up pressed');
+  const handleSignup = async () => {
+    if (!fullName || !email || !password) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Weak Password', 'Password must be at least 6 characters long.');
+      return;
+    }
+
+    try {
+      // Create user with Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(FIREBASE_AUTH, email, password);
+      const user = userCredential.user;
+
+      // Wait for authentication state to update
+      return new Promise((resolve, reject) => {
+        const unsubscribe = FIREBASE_AUTH.onAuthStateChanged(async (authenticatedUser) => {
+          if (authenticatedUser) {
+            unsubscribe(); // Stop listening once authenticated
+            try {
+              await setDoc(doc(FIRESTORE_DB, 'users', user.uid), {
+                fullName: fullName,
+                email: email,
+                createdAt: new Date(),
+              });
+              console.log('User data stored successfully:', user.uid);
+              resolve();
+            } catch (error) {
+              reject(error);
+            }
+          }
+        });
+      }).then(() => {
+        navigation.navigate('Home');
+      });
+    } catch (error) {
+      console.error('Signup error:', error);
+      if (error.code === 'auth/email-already-in-use') {
+        Alert.alert(
+          'Email Already in Use',
+          'An account with this email already exists. Would you like to log in instead?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Log In', onPress: () => navigation.navigate('Login') },
+          ]
+        );
+      } else if (error.code === 'auth/invalid-email') {
+        Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      } else if (error.code === 'auth/weak-password') {
+        Alert.alert('Weak Password', 'Password should be at least 6 characters long.');
+      } else {
+        Alert.alert('Signup Failed', error.message);
+      }
+    }
   };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-      <LinearGradient
-        colors={['#7F00FF', '#E100FF']}
-        style={StyleSheet.absoluteFill}
-      />
+      <LinearGradient colors={['#7F00FF', '#E100FF']} style={StyleSheet.absoluteFill} />
 
       <SafeAreaView style={styles.safeArea}>
         {/* Back Arrow */}
@@ -47,8 +104,8 @@ export default function SignupScreen() {
 
         {/* Illustration */}
         <View style={styles.imageContainer}>
-          <Image 
-            source={require('../assets/images/welcome.png')} // Replace this with the uploaded illustration
+          <Image
+            source={require('../assets/images/welcome.png')}
             style={styles.loginImage}
             resizeMode="contain"
           />
@@ -61,6 +118,8 @@ export default function SignupScreen() {
               style={styles.input}
               placeholder="Full Name"
               placeholderTextColor="#999"
+              value={fullName}
+              onChangeText={setFullName}
             />
             <TextInput
               style={styles.input}
@@ -68,12 +127,16 @@ export default function SignupScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               placeholderTextColor="#999"
+              value={email}
+              onChangeText={setEmail}
             />
             <TextInput
               style={styles.input}
               placeholder="Password"
               secureTextEntry
               placeholderTextColor="#999"
+              value={password}
+              onChangeText={setPassword}
             />
 
             <TouchableOpacity style={styles.loginButton} onPress={handleSignup}>
