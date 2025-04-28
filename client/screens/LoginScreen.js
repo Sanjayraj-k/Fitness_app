@@ -1,27 +1,123 @@
 import React, { useState } from 'react';
-import { Text, StyleSheet, View, StatusBar, TouchableOpacity, Image, TextInput, Alert } from 'react-native';
+import {
+  Text,
+  StyleSheet,
+  View,
+  StatusBar,
+  TouchableOpacity,
+  Image,
+  TextInput,
+  Alert,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeftIcon } from 'react-native-heroicons/solid';
 import { useNavigation } from '@react-navigation/native';
+import { useOAuth } from '@clerk/clerk-expo'; // Clerk for social logins
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { FIREBASE_AUTH } from '../firebaseconfig'; // Adjust path if needed
+import { doc, setDoc } from 'firebase/firestore';
+import { FIREBASE_AUTH, FIRESTORE_DB } from '../firebaseconfig'; // Adjust path if needed
 
 export default function LoginScreen() {
   const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleGoogleLogin = () => {
-    console.log('Google login pressed');
+  // Clerk OAuth hooks for social logins
+  const { startOAuthFlow: startGoogleOAuth } = useOAuth({ strategy: 'oauth_google' });
+  const { startOAuthFlow: startFacebookOAuth } = useOAuth({ strategy: 'oauth_facebook' });
+  const { startOAuthFlow: startAppleOAuth } = useOAuth({ strategy: 'oauth_apple' });
+
+  const handleGoogleLogin = async () => {
+    try {
+      console.log('Initiating Google OAuth flow'); // Debug
+      const { createdSessionId, setActive, signIn } = await startGoogleOAuth();
+      console.log('Google OAuth response:', { createdSessionId }); // Debug
+      if (createdSessionId) {
+        await setActive({ session: createdSessionId });
+        // Attempt to store user data in Firestore
+        const userData = {
+          fullName: signIn.firstName || signIn.lastName ? `${signIn.firstName} ${signIn.lastName}`.trim() : 'Google User',
+          email: signIn.emailAddress || '',
+          createdAt: new Date(),
+          authProvider: 'google',
+        };
+        try {
+          await setDoc(doc(FIRESTORE_DB, 'users', createdSessionId), userData, { merge: true });
+          console.log('Google user data stored:', userData);
+        } catch (firestoreError) {
+          console.error('Firestore write error:', firestoreError.message);
+          // Skip Firestore write for now and proceed with login
+          Alert.alert('Warning', 'Failed to save user data, but login succeeded. Check permissions.');
+        }
+        navigation.navigate('Home');
+      } else {
+        Alert.alert('Error', 'Google login failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Google OAuth error:', error);
+      Alert.alert('Error', 'Failed to log in with Google.');
+    }
   };
 
-  const handleFacebookLogin = () => {
-    console.log('Facebook login pressed');
+  const handleFacebookLogin = async () => {
+    try {
+      console.log('Initiating Facebook OAuth flow'); // Debug
+      const { createdSessionId, setActive, signIn } = await startFacebookOAuth();
+      console.log('Facebook OAuth response:', { createdSessionId }); // Debug
+      if (createdSessionId) {
+        await setActive({ session: createdSessionId });
+        const userData = {
+          fullName: signIn.firstName || signIn.lastName ? `${signIn.firstName} ${signIn.lastName}`.trim() : 'Facebook User',
+          email: signIn.emailAddress || '',
+          createdAt: new Date(),
+          authProvider: 'facebook',
+        };
+        try {
+          await setDoc(doc(FIRESTORE_DB, 'users', createdSessionId), userData, { merge: true });
+          console.log('Facebook user data stored:', userData);
+        } catch (firestoreError) {
+          console.error('Firestore write error:', firestoreError.message);
+          Alert.alert('Warning', 'Failed to save user data, but login succeeded. Check permissions.');
+        }
+        navigation.navigate('Home');
+      } else {
+        Alert.alert('Error', 'Facebook login failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Facebook OAuth error:', error);
+      Alert.alert('Error', 'Failed to log in with Facebook.');
+    }
   };
 
-  const handleAppleLogin = () => {
-    console.log('Apple login pressed');
+  const handleAppleLogin = async () => {
+    try {
+      console.log('Initiating Apple OAuth flow'); // Debug
+      const { createdSessionId, setActive, signIn } = await startAppleOAuth();
+      console.log('Apple OAuth response:', { createdSessionId }); // Debug
+      if (createdSessionId) {
+        await setActive({ session: createdSessionId });
+        const userData = {
+          fullName: signIn.firstName || signIn.lastName ? `${signIn.firstName} ${signIn.lastName}`.trim() : 'Apple User',
+          email: signIn.emailAddress || '',
+          createdAt: new Date(),
+          authProvider: 'apple',
+        };
+        try {
+          await setDoc(doc(FIRESTORE_DB, 'users', createdSessionId), userData, { merge: true });
+          console.log('Apple user data stored:', userData);
+        } catch (firestoreError) {
+          console.error('Firestore write error:', firestoreError.message);
+          Alert.alert('Warning', 'Failed to save user data, but login succeeded. Check permissions.');
+        }
+        navigation.navigate('Home');
+      } else {
+        Alert.alert('Error', 'Apple login failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Apple OAuth error:', error);
+      Alert.alert('Error', 'Failed to log in with Apple.');
+    }
   };
 
   const handleSignup = () => {
@@ -35,22 +131,10 @@ export default function LoginScreen() {
     }
 
     try {
-      // Sign in user with Firebase Authentication
       const userCredential = await signInWithEmailAndPassword(FIREBASE_AUTH, email, password);
       const user = userCredential.user;
-
-      // Wait for authentication state to update
-      return new Promise((resolve, reject) => {
-        const unsubscribe = FIREBASE_AUTH.onAuthStateChanged((authenticatedUser) => {
-          if (authenticatedUser) {
-            unsubscribe(); // Stop listening once authenticated
-            console.log('User logged in successfully:', user.uid);
-            resolve();
-          }
-        });
-      }).then(() => {
-        navigation.navigate('Home');
-      });
+      console.log('User logged in successfully:', user.uid);
+      navigation.navigate('Home');
     } catch (error) {
       console.error('Login error:', error);
       if (error.code === 'auth/user-not-found') {
@@ -65,21 +149,24 @@ export default function LoginScreen() {
     }
   };
 
+  const handleForgotPassword = () => {
+    Alert.alert('Forgot Password', 'This feature is not implemented yet.');
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-
       <LinearGradient colors={['#7F00FF', '#E100FF']} style={StyleSheet.absoluteFill} />
-
       <SafeAreaView style={styles.safeArea}>
-        {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Welcome')}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.navigate('Welcome')}
+          >
             <ArrowLeftIcon size={30} color="black" />
           </TouchableOpacity>
         </View>
 
-        {/* Image */}
         <View style={styles.imageContainer}>
           <Image
             source={require('../assets/images/welcome.png')}
@@ -88,7 +175,6 @@ export default function LoginScreen() {
           />
         </View>
 
-        {/* White rounded form container */}
         <View style={styles.contentContainer}>
           <View style={styles.form}>
             <Text style={styles.label}>Email Address</Text>
@@ -110,34 +196,40 @@ export default function LoginScreen() {
               value={password}
               onChangeText={setPassword}
             />
-            <TouchableOpacity style={styles.forgotButton}>
+            <TouchableOpacity style={styles.forgotButton} onPress={handleForgotPassword}>
               <Text style={styles.forgotText}>Forgot Password?</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
               <Text style={styles.loginButtonText}>Login</Text>
             </TouchableOpacity>
 
-            {/* OR Separator */}
             <View style={styles.orContainer}>
               <View style={styles.orLine} />
               <Text style={styles.orText}>Or</Text>
               <View style={styles.orLine} />
             </View>
 
-            {/* Social login icons */}
             <View style={styles.socialContainer}>
               <TouchableOpacity onPress={handleGoogleLogin}>
-                <Image source={require('../assets/images/google.png')} style={styles.socialIcon} />
+                <Image
+                  source={require('../assets/images/google.png')}
+                  style={styles.socialIcon}
+                />
               </TouchableOpacity>
               <TouchableOpacity onPress={handleAppleLogin}>
-                <Image source={require('../assets/images/apple.png')} style={styles.socialIcon} />
+                <Image
+                  source={require('../assets/images/apple.png')}
+                  style={styles.socialIcon}
+                />
               </TouchableOpacity>
               <TouchableOpacity onPress={handleFacebookLogin}>
-                <Image source={require('../assets/images/communication.png')} style={styles.socialIcon} />
+                <Image
+                  source={require('../assets/images/communication.png')}
+                  style={styles.socialIcon}
+                />
               </TouchableOpacity>
             </View>
 
-            {/* Signup prompt inside white container */}
             <View style={styles.signupContainer}>
               <Text style={styles.signupText}>Don't have an account? </Text>
               <TouchableOpacity onPress={handleSignup}>

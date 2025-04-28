@@ -1,12 +1,23 @@
+
 import React, { useState } from 'react';
-import { Text, StyleSheet, View, StatusBar, TouchableOpacity, Image, TextInput, Alert } from 'react-native';
+import {
+  Text,
+  StyleSheet,
+  View,
+  StatusBar,
+  TouchableOpacity,
+  Image,
+  TextInput,
+  Alert,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeftIcon } from 'react-native-heroicons/solid';
 import { useNavigation } from '@react-navigation/native';
+import { useOAuth } from '@clerk/clerk-expo'; // Clerk for social logins
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { FIREBASE_AUTH, FIRESTORE_DB } from '../firebaseconfig'; // Adjust path if needed
+import { FIREBASE_AUTH, FIRESTORE_DB } from '../firebaseconfig'; // Adjust path to your Firebase config
 
 export default function SignupScreen() {
   const navigation = useNavigation();
@@ -14,16 +25,60 @@ export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleGoogleLogin = () => {
-    console.log('Google login pressed');
+  // Clerk OAuth hooks for social logins
+  const { startOAuthFlow: startGoogleOAuth } = useOAuth({ strategy: 'oauth_google' });
+  const { startOAuthFlow: startFacebookOAuth } = useOAuth({ strategy: 'oauth_facebook' });
+  const { startOAuthFlow: startAppleOAuth } = useOAuth({ strategy: 'oauth_apple' });
+
+  const handleGoogleLogin = async () => {
+    try {
+      console.log('Initiating Google OAuth flow'); // Debug
+      const { createdSessionId, setActive } = await startGoogleOAuth();
+      console.log('Google OAuth response:', { createdSessionId }); // Debug
+      if (createdSessionId) {
+        await setActive({ session: createdSessionId });
+        navigation.navigate('Home');
+      } else {
+        Alert.alert('Error', 'Google sign-in failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Google OAuth error:', error);
+      Alert.alert('Error', 'Failed to sign in with Google.');
+    }
   };
 
-  const handleFacebookLogin = () => {
-    console.log('Facebook login pressed');
+  const handleFacebookLogin = async () => {
+    try {
+      console.log('Initiating Facebook OAuth flow'); // Debug
+      const { createdSessionId, setActive } = await startFacebookOAuth();
+      console.log('Facebook OAuth response:', { createdSessionId }); // Debug
+      if (createdSessionId) {
+        await setActive({ session: createdSessionId });
+        navigation.navigate('Home');
+      } else {
+        Alert.alert('Error', 'Facebook sign-in failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Facebook OAuth error:', error);
+      Alert.alert('Error', 'Failed to sign in with Facebook.');
+    }
   };
 
-  const handleAppleLogin = () => {
-    console.log('Apple login pressed');
+  const handleAppleLogin = async () => {
+    try {
+      console.log('Initiating Apple OAuth flow'); // Debug
+      const { createdSessionId, setActive } = await startAppleOAuth();
+      console.log('Apple OAuth response:', { createdSessionId }); // Debug
+      if (createdSessionId) {
+        await setActive({ session: createdSessionId });
+        navigation.navigate('Home');
+      } else {
+        Alert.alert('Error', 'Apple sign-in failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Apple OAuth error:', error);
+      Alert.alert('Error', 'Failed to sign in with Apple.');
+    }
   };
 
   const handleLogin = () => {
@@ -46,27 +101,15 @@ export default function SignupScreen() {
       const userCredential = await createUserWithEmailAndPassword(FIREBASE_AUTH, email, password);
       const user = userCredential.user;
 
-      // Wait for authentication state to update
-      return new Promise((resolve, reject) => {
-        const unsubscribe = FIREBASE_AUTH.onAuthStateChanged(async (authenticatedUser) => {
-          if (authenticatedUser) {
-            unsubscribe(); // Stop listening once authenticated
-            try {
-              await setDoc(doc(FIRESTORE_DB, 'users', user.uid), {
-                fullName: fullName,
-                email: email,
-                createdAt: new Date(),
-              });
-              console.log('User data stored successfully:', user.uid);
-              resolve();
-            } catch (error) {
-              reject(error);
-            }
-          }
-        });
-      }).then(() => {
-        navigation.navigate('Home');
+      // Store user data in Firestore
+      await setDoc(doc(FIRESTORE_DB, 'users', user.uid), {
+        fullName: fullName,
+        email: email,
+        createdAt: new Date(),
       });
+
+      console.log('User data stored successfully:', user.uid);
+      navigation.navigate('Home');
     } catch (error) {
       console.error('Signup error:', error);
       if (error.code === 'auth/email-already-in-use') {
@@ -91,18 +134,17 @@ export default function SignupScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-
       <LinearGradient colors={['#7F00FF', '#E100FF']} style={StyleSheet.absoluteFill} />
-
       <SafeAreaView style={styles.safeArea}>
-        {/* Back Arrow */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Welcome')}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.navigate('Welcome')}
+          >
             <ArrowLeftIcon size={30} color="black" />
           </TouchableOpacity>
         </View>
 
-        {/* Illustration */}
         <View style={styles.imageContainer}>
           <Image
             source={require('../assets/images/welcome.png')}
@@ -111,7 +153,6 @@ export default function SignupScreen() {
           />
         </View>
 
-        {/* Form Container */}
         <View style={styles.contentContainer}>
           <View style={styles.form}>
             <TextInput
@@ -143,27 +184,33 @@ export default function SignupScreen() {
               <Text style={styles.loginButtonText}>Sign Up</Text>
             </TouchableOpacity>
 
-            {/* OR Separator */}
             <View style={styles.orContainer}>
               <View style={styles.orLine} />
               <Text style={styles.orText}>Or</Text>
               <View style={styles.orLine} />
             </View>
 
-            {/* Social login icons */}
             <View style={styles.socialContainer}>
               <TouchableOpacity onPress={handleGoogleLogin}>
-                <Image source={require('../assets/images/google.png')} style={styles.socialIcon} />
+                <Image
+                  source={require('../assets/images/google.png')}
+                  style={styles.socialIcon}
+                />
               </TouchableOpacity>
               <TouchableOpacity onPress={handleAppleLogin}>
-                <Image source={require('../assets/images/apple.png')} style={styles.socialIcon} />
+                <Image
+                  source={require('../assets/images/apple.png')}
+                  style={styles.socialIcon}
+                />
               </TouchableOpacity>
               <TouchableOpacity onPress={handleFacebookLogin}>
-                <Image source={require('../assets/images/communication.png')} style={styles.socialIcon} />
+                <Image
+                  source={require('../assets/images/communication.png')}
+                  style={styles.socialIcon}
+                />
               </TouchableOpacity>
             </View>
 
-            {/* Already have account */}
             <View style={styles.signupContainer}>
               <Text style={styles.signupText}>Already have an account? </Text>
               <TouchableOpacity onPress={handleLogin}>
