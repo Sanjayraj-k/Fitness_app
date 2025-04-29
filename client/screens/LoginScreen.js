@@ -161,7 +161,7 @@ export default function LoginScreen() {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => navigation.navigate('Welcome')}
+            onPress={() => navigation.navigate('Home')}
           >
             <ArrowLeftIcon size={30} color="black" />
           </TouchableOpacity>
