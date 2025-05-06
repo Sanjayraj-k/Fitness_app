@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Text,
   StyleSheet,
@@ -13,10 +13,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeftIcon } from 'react-native-heroicons/solid';
 import { useNavigation } from '@react-navigation/native';
-import { useOAuth } from '@clerk/clerk-expo'; // Clerk for social logins
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useOAuth } from '@clerk/clerk-expo';
+import { signInWithEmailAndPassword, signInWithCustomToken } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { FIREBASE_AUTH, FIRESTORE_DB } from '../firebaseconfig'; // Adjust path if needed
+import { FIREBASE_AUTH, FIRESTORE_DB } from '../firebaseconfig';
 
 export default function LoginScreen() {
   const navigation = useNavigation();
@@ -28,97 +28,56 @@ export default function LoginScreen() {
   const { startOAuthFlow: startFacebookOAuth } = useOAuth({ strategy: 'oauth_facebook' });
   const { startOAuthFlow: startAppleOAuth } = useOAuth({ strategy: 'oauth_apple' });
 
-  const handleGoogleLogin = async () => {
+  const handleSocialLogin = async (startOAuthFlow, provider) => {
     try {
-      console.log('Initiating Google OAuth flow'); // Debug
-      const { createdSessionId, setActive, signIn } = await startGoogleOAuth();
-      console.log('Google OAuth response:', { createdSessionId }); // Debug
+      console.log(`Initiating ${provider} OAuth flow`);
+      const { createdSessionId, setActive, signIn } = await startOAuthFlow();
+      console.log(`${provider} OAuth response:`, { createdSessionId });
+
       if (createdSessionId) {
         await setActive({ session: createdSessionId });
-        // Attempt to store user data in Firestore
+
+        // Get the Clerk JWT token to sign in to Firebase
+        const token = await signIn.getToken({ template: 'integration_firebase' });
+        if (!token) {
+          throw new Error('Failed to get Clerk token for Firebase');
+        }
+
+        // Sign in to Firebase with the Clerk token
+        const userCredential = await signInWithCustomToken(FIREBASE_AUTH, token);
+        const user = userCredential.user;
+        console.log('Firebase user after social login:', user.uid);
+
+        // Store user data in Firestore using Firebase UID
         const userData = {
-          fullName: signIn.firstName || signIn.lastName ? `${signIn.firstName} ${signIn.lastName}`.trim() : 'Google User',
+          fullName: signIn.firstName || signIn.lastName ? `${signIn.firstName} ${signIn.lastName}`.trim() : `${provider} User`,
           email: signIn.emailAddress || '',
           createdAt: new Date(),
-          authProvider: 'google',
+          authProvider: provider.toLowerCase(),
         };
+
         try {
-          await setDoc(doc(FIRESTORE_DB, 'users', createdSessionId), userData, { merge: true });
-          console.log('Google user data stored:', userData);
+          await setDoc(doc(FIRESTORE_DB, 'users', user.uid), userData, { merge: true });
+          console.log(`${provider} user data stored:`, userData);
         } catch (firestoreError) {
           console.error('Firestore write error:', firestoreError.message);
-          // Skip Firestore write for now and proceed with login
           Alert.alert('Warning', 'Failed to save user data, but login succeeded. Check permissions.');
         }
-        navigation.navigate('Home');
+
+        // Navigate to Dashboard with Firebase UID
+        navigation.navigate('Home', { userId: user.uid });
       } else {
-        Alert.alert('Error', 'Google login failed. Please try again.');
+        Alert.alert('Error', `${provider} login failed. Please try again.`);
       }
     } catch (error) {
-      console.error('Google OAuth error:', error);
-      Alert.alert('Error', 'Failed to log in with Google.');
+      console.error(`${provider} OAuth error:`, error);
+      Alert.alert('Error', `Failed to log in with ${provider}.`);
     }
   };
 
-  const handleFacebookLogin = async () => {
-    try {
-      console.log('Initiating Facebook OAuth flow'); // Debug
-      const { createdSessionId, setActive, signIn } = await startFacebookOAuth();
-      console.log('Facebook OAuth response:', { createdSessionId }); // Debug
-      if (createdSessionId) {
-        await setActive({ session: createdSessionId });
-        const userData = {
-          fullName: signIn.firstName || signIn.lastName ? `${signIn.firstName} ${signIn.lastName}`.trim() : 'Facebook User',
-          email: signIn.emailAddress || '',
-          createdAt: new Date(),
-          authProvider: 'facebook',
-        };
-        try {
-          await setDoc(doc(FIRESTORE_DB, 'users', createdSessionId), userData, { merge: true });
-          console.log('Facebook user data stored:', userData);
-        } catch (firestoreError) {
-          console.error('Firestore write error:', firestoreError.message);
-          Alert.alert('Warning', 'Failed to save user data, but login succeeded. Check permissions.');
-        }
-        navigation.navigate('Home');
-      } else {
-        Alert.alert('Error', 'Facebook login failed. Please try again.');
-      }
-    } catch (error) {
-      console.error('Facebook OAuth error:', error);
-      Alert.alert('Error', 'Failed to log in with Facebook.');
-    }
-  };
-
-  const handleAppleLogin = async () => {
-    try {
-      console.log('Initiating Apple OAuth flow'); // Debug
-      const { createdSessionId, setActive, signIn } = await startAppleOAuth();
-      console.log('Apple OAuth response:', { createdSessionId }); // Debug
-      if (createdSessionId) {
-        await setActive({ session: createdSessionId });
-        const userData = {
-          fullName: signIn.firstName || signIn.lastName ? `${signIn.firstName} ${signIn.lastName}`.trim() : 'Apple User',
-          email: signIn.emailAddress || '',
-          createdAt: new Date(),
-          authProvider: 'apple',
-        };
-        try {
-          await setDoc(doc(FIRESTORE_DB, 'users', createdSessionId), userData, { merge: true });
-          console.log('Apple user data stored:', userData);
-        } catch (firestoreError) {
-          console.error('Firestore write error:', firestoreError.message);
-          Alert.alert('Warning', 'Failed to save user data, but login succeeded. Check permissions.');
-        }
-        navigation.navigate('Home');
-      } else {
-        Alert.alert('Error', 'Apple login failed. Please try again.');
-      }
-    } catch (error) {
-      console.error('Apple OAuth error:', error);
-      Alert.alert('Error', 'Failed to log in with Apple.');
-    }
-  };
+  const handleGoogleLogin = () => handleSocialLogin(startGoogleOAuth, 'Google');
+  const handleFacebookLogin = () => handleSocialLogin(startFacebookOAuth, 'Facebook');
+  const handleAppleLogin = () => handleSocialLogin(startAppleOAuth, 'Apple');
 
   const handleSignup = () => {
     navigation.navigate('Signup');
@@ -134,7 +93,7 @@ export default function LoginScreen() {
       const userCredential = await signInWithEmailAndPassword(FIREBASE_AUTH, email, password);
       const user = userCredential.user;
       console.log('User logged in successfully:', user.uid);
-      navigation.navigate('Home');
+      navigation.navigate('Home', { userId: user.uid });
     } catch (error) {
       console.error('Login error:', error);
       if (error.code === 'auth/user-not-found') {

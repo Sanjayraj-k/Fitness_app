@@ -14,6 +14,7 @@ import HomeScreen from '../screens/HomeScreen';
 import BeginnerContentScreen from '../screens/BeginnerContentScreen';
 import IntermediateContentScreen from '../screens/IntermediateContentScreen';
 import ExpertContentScreen from '../screens/ExpertContentScreen';
+import FitnessDashboard from '../screens/FitnessDashboard';
 
 const CreateScreen = () => <Text>Create Screen</Text>;
 const ProfileScreen = () => <Text>Profile Screen</Text>;
@@ -95,7 +96,7 @@ function ContentTab() {
       />
       <Tab.Screen 
         name="IntermediateTab" 
-        component={IntermediateContentScreen} 
+        component={FitnessDashboard} 
         options={{ tabBarLabel: 'Intermediate', headerShown: false }} 
       />
       <Tab.Screen 
