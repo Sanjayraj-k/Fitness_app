@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
@@ -14,9 +15,10 @@ import HomeScreen from '../screens/HomeScreen';
 import BeginnerContentScreen from '../screens/BeginnerContentScreen';
 import IntermediateContentScreen from '../screens/IntermediateContentScreen';
 import ExpertContentScreen from '../screens/ExpertContentScreen';
+import Dashboard from '../screens/Dashboard';
+import ProfileScreen from '../screens/ProfileScreen';
 
 const CreateScreen = () => <Text>Create Screen</Text>;
-const ProfileScreen = () => <Text>Profile Screen</Text>;
 const SettingsScreen = () => <Text>Settings Screen</Text>;
 
 WebBrowser.maybeCompleteAuthSession();
@@ -71,8 +73,10 @@ function ContentTab() {
             iconName = focused ? 'settings' : 'settings-outline';
           } else if (route.name === 'CreateTab') {
             iconName = focused ? 'add-circle' : 'add-circle-outline';
-          } else if (route.name === 'ProfileTab') {
-            iconName = focused ? 'person' : 'person-outline';
+          } else if (route.name === 'ProfileScreen') {
+            iconName = focused ? 'person' : 'person-outline'; // Icon for Profile
+          } else if (route.name === 'DashboardTab') {
+            iconName = focused ? 'stats-chart' : 'stats-chart-outline'; // Icon for Dashboard
           }
           return <Ionicons name={iconName} size={size} color={color} />;
         },
@@ -109,14 +113,14 @@ function ContentTab() {
         options={{ tabBarLabel: 'Settings', headerShown: false }} 
       />
       <Tab.Screen 
-        name="CreateTab" 
-        component={CreateScreen} 
-        options={{ tabBarLabel: 'Create', headerShown: false }} 
-      />
-      <Tab.Screen 
-        name="ProfileTab" 
+        name="ProfileScreen" 
         component={ProfileScreen} 
         options={{ tabBarLabel: 'Profile', headerShown: false }} 
+      />
+      <Tab.Screen 
+        name="DashboardTab" 
+        component={Dashboard} 
+        options={{ tabBarLabel: 'Dashboard', headerShown: false }} 
       />
     </Tab.Navigator>
   );
