@@ -1,36 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
-import { initializeApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
-
-// Firebase configuration
-const firebaseConfig = {
-  apiKey: 'AIzaSyDCZFMplWzCgjN-VZE0htmQgXXnH1qppjE',
-  authDomain: 'fitness-app-c3aab.firebaseapp.com',
-  projectId: 'fitness-app-c3aab',
-  storageBucket: 'fitness-app-c3aab.appspot.com',
-  messagingSenderId: '974601936464',
-  appId: '1:974601936464:web:2c8beb1b023687ea127b55',
-  measurementId: 'G-STQ1QVKS8P',
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+import { FIREBASE_AUTH, FIRESTORE_DB } from '../firebaseconfig';
+import { onAuthStateChanged } from 'firebase/auth';
+import { collection, query, where, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
 
 const Dashboard = ({ route }) => {
-  // Sample static data
-  const totalCalories = 1350;
-  const totalWorkouts = 3;
-  const currentStreak = 4;
+  // State variables for dashboard metrics
+  const [totalCalories, setTotalCalories] = useState(0);
+  const [totalWorkouts, setTotalWorkouts] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(0);
 
-  // State variables
+  // Other state variables
   const [selectedDate, setSelectedDate] = useState(new Date(2025, 3, 20));
   const [userId, setUserId] = useState(route.params?.userId || null);
-  const [caloriesBurnedData, setCaloriesBurnedData] = useState(Array(7).fill(0)); // 7 days for the week
+  const [caloriesBurnedData, setCaloriesBurnedData] = useState(Array(7).fill(0));
   const [activeDays, setActiveDays] = useState([]);
   const [workoutDataMap, setWorkoutDataMap] = useState({});
   const [loading, setLoading] = useState(true);
@@ -43,21 +27,25 @@ const Dashboard = ({ route }) => {
   const getWeekRange = (date) => {
     const dayOfWeek = date.getDay();
     const startOfWeek = new Date(date);
-    startOfWeek.setDate(date.getDate() - dayOfWeek); // Set to Sunday
+    startOfWeek.setDate(date.getDate() - dayOfWeek);
     const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6); // Set to Saturday
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
     return { startOfWeek, endOfWeek };
   };
 
-  // Fetch user-specific data for the selected week
+  // Fetch user-specific data for the selected week and dashboard metrics
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, async (user) => {
       if (user) {
         const uid = route.params?.userId || user.uid;
         setUserId(uid);
         await fetchUserData(uid);
+        await fetchDashboardMetrics(uid);
       } else {
         setUserId(null);
+        setTotalCalories(0);
+        setTotalWorkouts(0);
+        setCurrentStreak(0);
         setCaloriesBurnedData(Array(7).fill(0));
         setActiveDays([]);
         setWorkoutDataMap({});
@@ -66,8 +54,39 @@ const Dashboard = ({ route }) => {
     });
 
     return () => unsubscribe();
-  }, [selectedDate]); // Re-fetch when selectedDate changes
+  }, [selectedDate]);
 
+  // Fetch dashboard metrics (totalCalories, totalWorkouts, currentStreak) from Firestore
+  const fetchDashboardMetrics = async (uid) => {
+    try {
+      const dashboardDocRef = doc(FIRESTORE_DB, `users/${uid}/dashboard`, 'metrics');
+      const dashboardDoc = await getDoc(dashboardDocRef);
+      if (dashboardDoc.exists()) {
+        const data = dashboardDoc.data();
+        setTotalCalories(data.totalCalories || 0);
+        setTotalWorkouts(data.totalWorkouts || 0);
+        setCurrentStreak(data.currentStreak || 0);
+      } else {
+        // Initialize with default values if no dashboard data exists
+        const defaultMetrics = {
+          totalCalories: 0,
+          totalWorkouts: 0,
+          currentStreak: 0,
+        };
+        await setDoc(dashboardDocRef, defaultMetrics);
+        setTotalCalories(0);
+        setTotalWorkouts(0);
+        setCurrentStreak(0);
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard metrics:', error);
+      setTotalCalories(0);
+      setTotalWorkouts(0);
+      setCurrentStreak(0);
+    }
+  };
+
+  // Fetch workout data for the user
   const fetchUserData = async (uid) => {
     if (!uid) {
       setLoading(false);
@@ -76,13 +95,11 @@ const Dashboard = ({ route }) => {
 
     setLoading(true);
     try {
-      // Get week range for the selected date
       const { startOfWeek, endOfWeek } = getWeekRange(selectedDate);
-      // Fetch workouts for the entire month to populate activeDays for calendar
       const startOfMonth = new Date(year, currentMonth, 1);
       const endOfMonth = new Date(year, currentMonth + 1, 0);
       const workoutsQuery = query(
-        collection(db, `users/${uid}/workouts`),
+        collection(FIRESTORE_DB, `users/${uid}/workouts`),
         where('date', '>=', startOfMonth.toISOString()),
         where('date', '<=', endOfMonth.toISOString())
       );
@@ -98,7 +115,6 @@ const Dashboard = ({ route }) => {
         const day = workoutDate.getDate();
         const dateKey = `${workoutDate.getFullYear()}-${workoutDate.getMonth()}-${day}`;
 
-        // Populate workout data map
         if (!newWorkoutDataMap[dateKey]) {
           newWorkoutDataMap[dateKey] = [];
         }
@@ -107,14 +123,12 @@ const Dashboard = ({ route }) => {
           calories: data.calories,
         });
 
-        // Add to active days for calendar
         if (!newActiveDays.includes(day)) {
           newActiveDays.push(day);
         }
 
-        // Add to calories data if within the week
         if (workoutDate >= startOfWeek && workoutDate <= endOfWeek) {
-          const dayIndex = Math.floor((workoutDate - startOfWeek) / (1000 * 60 * 60 * 24)); // Index from 0 to 6
+          const dayIndex = Math.floor((workoutDate - startOfWeek) / (1000 * 60 * 60 * 24));
           newCaloriesData[dayIndex] += data.calories;
         }
       });
@@ -129,6 +143,24 @@ const Dashboard = ({ route }) => {
       setWorkoutDataMap({});
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Function to update dashboard metrics in Firestore (optional, can be called when a new workout is added)
+  const updateDashboardMetrics = async (uid, newCalories, newWorkoutCount, newStreak) => {
+    try {
+      const dashboardDocRef = doc(FIRESTORE_DB, `users/${uid}/dashboard`, 'metrics');
+      const updatedMetrics = {
+        totalCalories: newCalories,
+        totalWorkouts: newWorkoutCount,
+        currentStreak: newStreak,
+      };
+      await setDoc(dashboardDocRef, updatedMetrics, { merge: true });
+      setTotalCalories(newCalories);
+      setTotalWorkouts(newWorkoutCount);
+      setCurrentStreak(newStreak);
+    } catch (error) {
+      console.error('Error updating dashboard metrics:', error);
     }
   };
 

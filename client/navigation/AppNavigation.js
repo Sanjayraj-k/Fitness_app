@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
@@ -14,10 +15,11 @@ import HomeScreen from '../screens/HomeScreen';
 import BeginnerContentScreen from '../screens/BeginnerContentScreen';
 import IntermediateContentScreen from '../screens/IntermediateContentScreen';
 import ExpertContentScreen from '../screens/ExpertContentScreen';
-import FitnessDashboard from '../screens/FitnessDashboard';
+import Dashboard from '../screens/Dashboard';
+import ProfileScreen from '../screens/ProfileScreen';
+import Test from '../screens/Test';
 
 const CreateScreen = () => <Text>Create Screen</Text>;
-const ProfileScreen = () => <Text>Profile Screen</Text>;
 const SettingsScreen = () => <Text>Settings Screen</Text>;
 
 WebBrowser.maybeCompleteAuthSession();
@@ -25,7 +27,7 @@ WebBrowser.maybeCompleteAuthSession();
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-const clerkPublishableKey = Constants.expoConfig?.extra?.clerkPublishableKey || 'pk_test_bGFyZ2UtbWFybW9zZXQtMC5jbGVyay5hY2NvdW50cy5kZXYk';
+const clerkPublishableKey = Constants.expoConfig?.extra?.clerkPublishableKey || 'pk_test_d2lzZS1tdXNrb3gtNDYuY2xlcmsuYWNjb3VudHMuZGV2JA';
 
 if (!clerkPublishableKey) {
   console.error('Clerk Publishable Key is missing. Check app.json "extra" field or provide a fallback key.');
@@ -72,8 +74,10 @@ function ContentTab() {
             iconName = focused ? 'settings' : 'settings-outline';
           } else if (route.name === 'CreateTab') {
             iconName = focused ? 'add-circle' : 'add-circle-outline';
-          } else if (route.name === 'ProfileTab') {
-            iconName = focused ? 'person' : 'person-outline';
+          } else if (route.name === 'ProfileScreen') {
+            iconName = focused ? 'person' : 'person-outline'; // Icon for Profile
+          } else if (route.name === 'DashboardTab') {
+            iconName = focused ? 'stats-chart' : 'stats-chart-outline'; // Icon for Dashboard
           }
           return <Ionicons name={iconName} size={size} color={color} />;
         },
@@ -90,35 +94,31 @@ function ContentTab() {
       })}
     >
       <Tab.Screen 
-        name="BeginnerTab" 
-        component={BeginnerContentScreen} 
-        options={{ tabBarLabel: 'Beginner', headerShown: false }} 
+        name="DashboardTab" 
+        component={Dashboard} 
+        options={{ tabBarLabel: 'Dashboard', headerShown: false }} 
       />
       <Tab.Screen 
-        name="IntermediateTab" 
-        component={FitnessDashboard} 
-        options={{ tabBarLabel: 'Intermediate', headerShown: false }} 
+        name="Addworkout" 
+        component={IntermediateContentScreen} 
+        options={{ tabBarLabel: 'Addworkout', headerShown: false }} 
       />
       <Tab.Screen 
-        name="ExpertTab" 
-        component={ExpertContentScreen} 
-        options={{ tabBarLabel: 'Expert', headerShown: false }} 
+        name="Test" 
+        component={Test} 
+        options={{ tabBarLabel: 'Evaluate', headerShown: false }} 
       />
       <Tab.Screen 
-        name="SettingsTab" 
-        component={SettingsScreen} 
-        options={{ tabBarLabel: 'Settings', headerShown: false }} 
+        name="Tutorial" 
+        component={Dashboard} 
+        options={{ tabBarLabel: 'Tutorial', headerShown: false }} 
       />
       <Tab.Screen 
-        name="CreateTab" 
-        component={CreateScreen} 
-        options={{ tabBarLabel: 'Create', headerShown: false }} 
-      />
-      <Tab.Screen 
-        name="ProfileTab" 
+        name="ProfileScreen" 
         component={ProfileScreen} 
         options={{ tabBarLabel: 'Profile', headerShown: false }} 
       />
+      
     </Tab.Navigator>
   );
 }
