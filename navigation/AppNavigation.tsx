@@ -44,39 +44,57 @@ function AuthStack() {
 }
 
 // Stack for the content tabs
-function ContentStack() {
+function ContentStack({ route }) {
+  const skillLevel = route.params?.screen; // Get the skill level passed from HomeScreen
   return (
     <Stack.Navigator initialRouteName="ContentTab">
       <Stack.Screen 
         name="ContentTab" 
         component={ContentTab} 
         options={{ headerShown: false }} 
+        initialParams={{ skillLevel }} // Pass skillLevel to ContentTab
       />
     </Stack.Navigator>
   );
 }
 
 // Main Tab Navigator for content screens
-function ContentTab() {
+function ContentTab({ route }) {
+  const skillLevel = route.params?.skillLevel; // Get the skill level from params
+
+  // Determine which screen to show for "Add Workout" based on skillLevel
+  const getWorkoutScreen = () => {
+    switch (skillLevel) {
+      case 'BeginnerTab':
+        return BeginnerContentScreen;
+      case 'IntermediateTab':
+        return IntermediateContentScreen;
+      case 'ExpertTab':
+        return ExpertContentScreen;
+      default:
+        return ExpertContentScreen; // Fallback to ExpertContentScreen if no skill level is provided
+    }
+  };
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
           if (route.name === 'BeginnerTab') {
-            iconName = focused ? 'walk' : 'walk-outline'; // Icon for Beginner
+            iconName = focused ? 'walk' : 'walk-outline';
           } else if (route.name === 'IntermediateTab') {
-            iconName = focused ? 'barbell' : 'barbell-outline'; // Icon for Intermediate
+            iconName = focused ? 'barbell' : 'barbell-outline';
           } else if (route.name === 'ExpertTab') {
-            iconName = focused ? 'trophy' : 'trophy-outline'; // Icon for Expert
+            iconName = focused ? 'trophy' : 'trophy-outline';
           } else if (route.name === 'SettingsTab') {
             iconName = focused ? 'settings' : 'settings-outline';
           } else if (route.name === 'CreateTab') {
             iconName = focused ? 'add-circle' : 'add-circle-outline';
           } else if (route.name === 'ProfileScreen') {
-            iconName = focused ? 'person' : 'person-outline'; // Icon for Profile
+            iconName = focused ? 'person' : 'person-outline';
           } else if (route.name === 'DashboardTab') {
-            iconName = focused ? 'stats-chart' : 'stats-chart-outline'; // Icon for Dashboard
+            iconName = focused ? 'stats-chart' : 'stats-chart-outline';
           }
           return <Ionicons name={iconName} size={size} color={color} />;
         },
@@ -93,34 +111,24 @@ function ContentTab() {
       })}
     >
       <Tab.Screen 
-        name="BeginnerTab" 
-        component={BeginnerContentScreen} 
-        options={{ tabBarLabel: 'Beginner', headerShown: false }} 
-      />
-      <Tab.Screen 
-        name="IntermediateTab" 
-        component={IntermediateContentScreen} 
-        options={{ tabBarLabel: 'Intermediate', headerShown: false }} 
+        name="DashboardTab" 
+        component={Dashboard} 
+        options={{ tabBarLabel: 'Dashboard', headerShown: false }} 
       />
       <Tab.Screen 
         name="ExpertTab" 
-        component={ExpertContentScreen} 
-        options={{ tabBarLabel: 'Expert', headerShown: false }} 
+        component={getWorkoutScreen()} // Dynamically set the component based on skillLevel
+        options={{ tabBarLabel: 'Add Workout', headerShown: false }} 
       />
       <Tab.Screen 
         name="SettingsTab" 
         component={SettingsScreen} 
-        options={{ tabBarLabel: 'Settings', headerShown: false }} 
+        options={{ tabBarLabel: 'Test', headerShown: false }} 
       />
       <Tab.Screen 
         name="ProfileScreen" 
         component={ProfileScreen} 
         options={{ tabBarLabel: 'Profile', headerShown: false }} 
-      />
-      <Tab.Screen 
-        name="DashboardTab" 
-        component={Dashboard} 
-        options={{ tabBarLabel: 'Dashboard', headerShown: false }} 
       />
     </Tab.Navigator>
   );
@@ -149,7 +157,6 @@ function NavigationWrapper() {
   const { isSignedIn } = useAuth();
   const [firebaseUser, setFirebaseUser] = useState(null);
 
-  // Listen for Firebase auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (user) => {
       setFirebaseUser(user);
@@ -157,7 +164,6 @@ function NavigationWrapper() {
     return () => unsubscribe();
   }, []);
 
-  // If either Clerk (social login) or Firebase (email/password) user is authenticated, show MainStack
   return isSignedIn || firebaseUser ? <MainStack /> : <AuthStack />;
 }
 

@@ -165,22 +165,22 @@ const Dashboard = ({ route }) => {
   };
 
   // Calendar setup
-  const daysInMonth = new Date(year, currentMonth + 1, 0).getDate();
+   const daysInMonth = new Date(year, currentMonth + 1, 0).getDate();
   const firstDayOfMonth = new Date(year, currentMonth, 1).getDay();
   const calendarDays = Array(firstDayOfMonth).fill(null).concat([...Array(daysInMonth)].map((_, i) => i + 1));
 
   // Navigation to previous and next date
-  const prevDate = () => {
+const prevDate = () => {
     const newDate = new Date(selectedDate);
-    newDate.setDate(selectedDate.getDate() - 1);
+    newDate.setMonth(selectedDate.getMonth() - 1); // Move to the previous month
     setSelectedDate(newDate);
-  };
+};
 
-  const nextDate = () => {
+const nextDate = () => {
     const newDate = new Date(selectedDate);
-    newDate.setDate(selectedDate.getDate() + 1);
+    newDate.setMonth(selectedDate.getMonth() + 1); // Move to the next month
     setSelectedDate(newDate);
-  };
+};
 
   // Handle date click
   const handleDateClick = (day) => {
