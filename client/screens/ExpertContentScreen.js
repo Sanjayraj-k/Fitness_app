@@ -1,4 +1,3 @@
-// screens/ExpertContentScreen.js
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,7 +9,7 @@ const ExpertContentScreen = () => {
       style={styles.container}
     >
       <Text style={styles.title}>Veteran Workouts</Text>
-      <Text style={styles.subtitle}>Here are your elite-level fitness routines!</Text>
+      <Text style={styles.subtitle}>Feature coming soon</Text>
     </LinearGradient>
   );
 };

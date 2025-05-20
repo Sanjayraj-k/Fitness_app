@@ -14,7 +14,7 @@ const HomeScreen = () => {
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Un Defined</Text>
+          <Text style={styles.headerTitle}>Fitness Expert</Text>
           <View style={styles.headerLine} />
         </View>
 
@@ -45,7 +45,7 @@ const HomeScreen = () => {
             style={[styles.card, styles.veteranCard]}
             onPress={() => navigation.navigate('Content', { screen: 'ExpertTab' })}
           >
-            <Text style={styles.cardTitle}>VETERAN</Text>
+            <Text style={styles.cardTitle}>Advanced</Text>
             <Text style={styles.cardSubtitle}>Elite performance mode</Text>
             <View style={styles.cardDecoration} />
           </TouchableOpacity>

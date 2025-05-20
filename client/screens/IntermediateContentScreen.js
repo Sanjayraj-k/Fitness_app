@@ -1,17 +1,18 @@
-// screens/IntermediateContentScreen.js
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const IntermediateContentScreen = () => {
   return (
-    <LinearGradient
-      colors={['#6e45e2', '#88d3ce']}
-      style={styles.container}
-    >
-      <Text style={styles.title}>Intermediate Workouts</Text>
-      <Text style={styles.subtitle}>Here are your intermediate-level fitness routines!</Text>
-    </LinearGradient>
+    <SafeAreaView style={{ flex: 1 }}>
+      <LinearGradient
+        colors={['#6e45e2', '#88d3ce']}
+        style={styles.container}
+      >
+        <Text style={styles.title}>Intermediate Workouts</Text>
+        <Text style={styles.subtitle}>Feature coming soon</Text>
+      </LinearGradient>
+    </SafeAreaView>
   );
 };
 

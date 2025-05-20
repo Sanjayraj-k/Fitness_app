@@ -17,6 +17,13 @@ import IntermediateContentScreen from '../screens/IntermediateContentScreen';
 import ExpertContentScreen from '../screens/ExpertContentScreen';
 import Dashboard from '../screens/Dashboard';
 import ProfileScreen from '../screens/ProfileScreen';
+import BicepsScreen from '../screens/BicepsScreen';
+import AbsScreen from '../screens/AbsScreen';
+import ChestScreen from '../screens/ChestScreen';
+import LegScreen from '../screens/LegScreen';
+import TricepsScreen from '../screens/TricepsScreen'; // Correct import
+import ShoulderScreen from '../screens/ShoulderScreen';
+import LatScreen from '../screens/LatScreen';
 import Test from '../screens/Test';
 
 const CreateScreen = () => <Text>Create Screen</Text>;
@@ -45,80 +52,133 @@ function AuthStack() {
 }
 
 // Stack for the content tabs
-function ContentStack() {
+function ContentStack({ route }) {
+  const skillLevel = route.params?.screen;
   return (
     <Stack.Navigator initialRouteName="ContentTab">
-      <Stack.Screen 
-        name="ContentTab" 
-        component={ContentTab} 
-        options={{ headerShown: false }} 
+      <Stack.Screen
+        name="ContentTab"
+        component={ContentTab}
+        options={{ headerShown: false }}
+        initialParams={{ skillLevel }}
+      />
+      <Stack.Screen
+        name="BicepsScreen"
+        component={BicepsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AbsScreen"
+        component={AbsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="LatScreen"
+        component={LatScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="LegScreen"
+        component={LegScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ShoulderScreen"
+        component={ShoulderScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="TricepsScreen" // Fixed typo: "TricpesScreen" → "TricepsScreen"
+        component={TricepsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ChestScreen"
+        component={ChestScreen}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );
 }
 
 // Main Tab Navigator for content screens
-function ContentTab() {
+function ContentTab({ route }) {
+  const skillLevel = route.params?.skillLevel;
+
+  const getWorkoutScreen = () => {
+    switch (skillLevel) {
+      case 'BeginnerTab':
+        return BeginnerContentScreen;
+      case 'IntermediateTab':
+        return IntermediateContentScreen;
+      case 'ExpertTab':
+        return ExpertContentScreen;
+      default:
+        return ExpertContentScreen;
+    }
+  };
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
           if (route.name === 'BeginnerTab') {
-            iconName = focused ? 'walk' : 'walk-outline'; // Icon for Beginner
+            iconName = focused ? 'walk' : 'walk-outline';
           } else if (route.name === 'IntermediateTab') {
-            iconName = focused ? 'barbell' : 'barbell-outline'; // Icon for Intermediate
+            iconName = focused ? 'barbell' : 'barbell-outline';
           } else if (route.name === 'ExpertTab') {
-            iconName = focused ? 'trophy' : 'trophy-outline'; // Icon for Expert
+            iconName = focused ? 'trophy' : 'trophy-outline';
           } else if (route.name === 'SettingsTab') {
             iconName = focused ? 'settings' : 'settings-outline';
           } else if (route.name === 'CreateTab') {
             iconName = focused ? 'add-circle' : 'add-circle-outline';
           } else if (route.name === 'ProfileScreen') {
-            iconName = focused ? 'person' : 'person-outline'; // Icon for Profile
+            iconName = focused ? 'person' : 'person-outline';
           } else if (route.name === 'DashboardTab') {
-            iconName = focused ? 'stats-chart' : 'stats-chart-outline'; // Icon for Dashboard
+            iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+          } else if (route.name === 'Trainer') {
+            iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
           }
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#00C4B4',
+        tabBarActiveTintColor: '#007AFF',
         tabBarInactiveTintColor: 'gray',
         tabBarStyle: {
-          backgroundColor: '#F5F5F5',
+          backgroundColor: '#FFFFFF',
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
           paddingBottom: 5,
           paddingTop: 5,
           height: 60,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 5,
         },
       })}
     >
-      <Tab.Screen 
-        name="DashboardTab" 
-        component={Dashboard} 
-        options={{ tabBarLabel: 'Dashboard', headerShown: false }} 
+      <Tab.Screen
+        name="DashboardTab"
+        component={Dashboard}
+        options={{ tabBarLabel: 'Dashboard', headerShown: false }}
       />
-      <Tab.Screen 
-        name="Addworkout" 
-        component={IntermediateContentScreen} 
-        options={{ tabBarLabel: 'Addworkout', headerShown: false }} 
+      <Tab.Screen
+        name="ExpertTab"
+        component={getWorkoutScreen()}
+        options={{ tabBarLabel: 'Add Workout', headerShown: false }}
       />
-      <Tab.Screen 
-        name="Test" 
-        component={Test} 
-        options={{ tabBarLabel: 'Evaluate', headerShown: false }} 
+      <Tab.Screen
+        name="Trainer"
+        component={Test}
+        options={{ tabBarLabel: 'AI Trainer', headerShown: false }}
       />
-      <Tab.Screen 
-        name="Tutorial" 
-        component={Dashboard} 
-        options={{ tabBarLabel: 'Tutorial', headerShown: false }} 
+      <Tab.Screen
+        name="ProfileScreen"
+        component={ProfileScreen}
+        options={{ tabBarLabel: 'Profile', headerShown: false }}
       />
-      <Tab.Screen 
-        name="ProfileScreen" 
-        component={ProfileScreen} 
-        options={{ tabBarLabel: 'Profile', headerShown: false }} 
-      />
-      
     </Tab.Navigator>
   );
 }
@@ -127,15 +187,15 @@ function ContentTab() {
 function MainStack() {
   return (
     <Stack.Navigator initialRouteName="Home">
-      <Stack.Screen 
-        name="Home" 
-        component={HomeScreen} 
-        options={{ headerShown: false }} 
+      <Stack.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{ headerShown: false }}
       />
-      <Stack.Screen 
-        name="Content" 
-        component={ContentStack} 
-        options={{ headerShown: false }} 
+      <Stack.Screen
+        name="Content"
+        component={ContentStack}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );
@@ -146,7 +206,6 @@ function NavigationWrapper() {
   const { isSignedIn } = useAuth();
   const [firebaseUser, setFirebaseUser] = useState(null);
 
-  // Listen for Firebase auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (user) => {
       setFirebaseUser(user);
@@ -154,7 +213,6 @@ function NavigationWrapper() {
     return () => unsubscribe();
   }, []);
 
-  // If either Clerk (social login) or Firebase (email/password) user is authenticated, show MainStack
   return isSignedIn || firebaseUser ? <MainStack /> : <AuthStack />;
 }
 
