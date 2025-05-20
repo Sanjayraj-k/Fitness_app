@@ -86,7 +86,7 @@ function ContentStack({ route }) {
         options={{ headerShown: false }} // Added BicepsScreen route
       />
       <Stack.Screen 
-        name="TricpesScreen" 
+        name="TricepsScreen" 
         component={TricepsScreen} 
         options={{ headerShown: false }} // Added BicepsScreen route
       />

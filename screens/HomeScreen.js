@@ -14,7 +14,7 @@ const HomeScreen = () => {
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Un Defined</Text>
+          <Text style={styles.headerTitle}>Fitness Expert</Text>
           <View style={styles.headerLine} />
         </View>
 
