@@ -17,7 +17,13 @@ import IntermediateContentScreen from '../screens/IntermediateContentScreen';
 import ExpertContentScreen from '../screens/ExpertContentScreen';
 import Dashboard from '../screens/Dashboard';
 import ProfileScreen from '../screens/ProfileScreen';
-
+import BicepsScreen from '../screens/BicepsScreen'; // Import BicepsScreen
+import AbsScreen from '../screens/AbsScreen';
+import ChestScreen from '../screens/ChestScreen';
+import LegScreen from '../screens/LegScreen';
+import TricepsScreen from '../screens/TricepsScreen';
+import ShoulderScreen from '../screens/ShoulderScreen'; 
+import LatScreen from '../screens/LatScreen';
 const CreateScreen = () => <Text>Create Screen</Text>;
 const SettingsScreen = () => <Text>Settings Screen</Text>;
 
@@ -53,6 +59,41 @@ function ContentStack({ route }) {
         component={ContentTab} 
         options={{ headerShown: false }} 
         initialParams={{ skillLevel }} // Pass skillLevel to ContentTab
+      />
+      <Stack.Screen 
+        name="BicepsScreen" 
+        component={BicepsScreen} 
+        options={{ headerShown: false }} // Added BicepsScreen route
+      />
+      <Stack.Screen 
+        name="AbsScreen" 
+        component={AbsScreen} 
+        options={{ headerShown: false }} // Added BicepsScreen route
+      />
+      <Stack.Screen 
+        name="LatScreen" 
+        component={LatScreen} 
+        options={{ headerShown: false }} // Added BicepsScreen route
+      />
+      <Stack.Screen 
+        name="LegScreen" 
+        component={LegScreen} 
+        options={{ headerShown: false }} // Added BicepsScreen route
+      />
+      <Stack.Screen 
+        name="ShoulderScreen" 
+        component={ShoulderScreen} 
+        options={{ headerShown: false }} // Added BicepsScreen route
+      />
+      <Stack.Screen 
+        name="TricpesScreen" 
+        component={TricepsScreen} 
+        options={{ headerShown: false }} // Added BicepsScreen route
+      />
+      <Stack.Screen 
+        name="ChestScreen" 
+        component={ChestScreen} 
+        options={{ headerShown: false }} // Added BicepsScreen route
       />
     </Stack.Navigator>
   );
